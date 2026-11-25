@@ -1,0 +1,40 @@
+
+name: HTML CI CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Get Repository Code
+        uses: actions/checkout@v4
+
+      - name: Test HTML File
+        run: |
+          test -f index.html
+          echo "HTML file found!"
+
+      - name: Copy HTML to EC2
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          source: "index.html"
+          target: "/tmp/"
+
+      - name: Deploy Website
+        uses: appleboy/ssh-action@v1.2.0
+        with:
+          host: ${{ secrets.EC2_HOST }}
+          username: ${{ secrets.EC2_USERNAME }}
+          key: ${{ secrets.EC2_SSH_KEY }}
+          script: |
+            sudo install -o root -g root -m 644 /tmp/index.html /var/www/html/index.html
+            rm /tmp/index.html
+            echo "Website deployed successfully!"
